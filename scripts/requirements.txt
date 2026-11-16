@@ -1,0 +1,7 @@
+# Testé avec python-pptx 1.0.2 (Python 3.10)
+python-pptx
+python-docx
+lxml
+Pillow
+# Outils système nécessaires pour l'export PDF et le contrôle visuel :
+#   LibreOffice (soffice), Poppler (pdftoppm), ImageMagick (montage)

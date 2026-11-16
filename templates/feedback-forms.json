@@ -1,0 +1,14 @@
+{
+  "titre": "Votre avis — {{titre du cours}}",
+  "description": "Questionnaire anonyme, 3 minutes.",
+  "quiz": false,
+  "questions": [
+    {"type": "echelle", "titre": "Les objectifs annoncés ont-ils été atteints ?", "min": 1, "max": 5, "label_min": "Pas du tout", "label_max": "Totalement"},
+    {"type": "choix_unique", "titre": "Le rythme était…", "choix": [{"texte": "Trop lent"}, {"texte": "Adapté"}, {"texte": "Trop rapide"}]},
+    {"type": "echelle", "titre": "Utilité des ateliers", "min": 1, "max": 5},
+    {"type": "echelle", "titre": "Difficulté des ateliers", "min": 1, "max": 5, "label_min": "Trop facile", "label_max": "Trop difficile"},
+    {"type": "texte_long", "titre": "Ce que vous retenez en priorité", "obligatoire": false},
+    {"type": "texte_long", "titre": "Ce qui vous a manqué", "obligatoire": false},
+    {"type": "texte_long", "titre": "Commentaire libre", "obligatoire": false}
+  ]
+}

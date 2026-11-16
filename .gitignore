@@ -1,0 +1,21 @@
+# Fichiers temporaires Office
+~$*
+*.tmp
+.DS_Store
+Thumbs.db
+# Exports volumineux (décommenter si tu ne veux pas versionner les PDF/PPTX générés)
+# cours/*/03-supports/*.pdf
+# cours/*/03-supports/*.pptx
+
+# Profils et chartes personnels : décommenter pour ne pas les publier
+# dans le dépôt modèle partagé (garder seulement les _modele/).
+# formateurs/*/
+# !formateurs/_modele/
+# !formateurs/README.md
+# chartes/*/
+# !chartes/_modele/
+# !chartes/README.md
+
+# Python
+__pycache__/
+*.pyc

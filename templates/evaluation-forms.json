@@ -1,0 +1,35 @@
+{
+  "titre": "Évaluation — {{titre du cours}}",
+  "description": "Durée conseillée : 15 min.",
+  "quiz": true,
+  "questions": [
+    {
+      "type": "choix_unique",
+      "titre": "Question à une seule bonne réponse",
+      "aide": "Optionnel : précision affichée sous la question",
+      "points": 1,
+      "choix": [
+        {"texte": "Bonne réponse", "correct": true},
+        {"texte": "Distracteur plausible 1"},
+        {"texte": "Distracteur plausible 2"}
+      ],
+      "feedback_correct": "Pourquoi c'est juste (renvoi à la séquence du cours).",
+      "feedback_incorrect": "Indice ou renvoi vers la slide / l'atelier concerné."
+    },
+    {
+      "type": "choix_multiple",
+      "titre": "Question à plusieurs bonnes réponses",
+      "points": 2,
+      "choix": [
+        {"texte": "Bonne réponse A", "correct": true},
+        {"texte": "Bonne réponse B", "correct": true},
+        {"texte": "Distracteur"}
+      ]
+    },
+    {
+      "type": "texte_long",
+      "titre": "Question ouverte (correction manuelle)",
+      "obligatoire": false
+    }
+  ]
+}
