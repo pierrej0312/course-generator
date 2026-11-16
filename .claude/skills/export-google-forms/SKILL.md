@@ -13,8 +13,8 @@ Pourquoi Apps Script : le script s'exécute dans le compte Google du formateur, 
 2. Idem pour le feedback : `06-evaluations/feedback.forms.json` (base : `templates/feedback-forms.json`, `quiz: false`).
 3. Générer les scripts :
    ```bash
-   python3 scripts/forms/genere_apps_script.py 06-evaluations/evaluation.forms.json > 06-evaluations/evaluation.gs
-   python3 scripts/forms/genere_apps_script.py 06-evaluations/feedback.forms.json  > 06-evaluations/feedback.gs
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/forms/genere_apps_script.py" 06-evaluations/evaluation.forms.json > 06-evaluations/evaluation.gs
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/forms/genere_apps_script.py" 06-evaluations/feedback.forms.json  > 06-evaluations/feedback.gs
    ```
    Le générateur refuse un quiz incohérent (choix unique sans exactement une bonne réponse, etc.) : corriger le JSON, ne pas contourner.
 4. Donner au formateur la marche à suivre :

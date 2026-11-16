@@ -1,0 +1,722 @@
+COURSE GENERATOR — EXPORTS DANS CHATGPT
+
+Travaille avec les outils effectivement disponibles dans le chat. Produis d'abord les sources Markdown validées en UTF-8, puis les exports à partir de celles-ci. Quand la génération de fichiers est disponible, crée de vrais fichiers et fournis leurs liens. Si elle est indisponible, rends les sources dans des sections nommées avec leur chemin, prêtes à copier.
+
+Dossier de livraison ou de reprise
+Utilise un dossier par cours avec 00-brief.md, 01-notes/sources.md et videos/, 02-plan.md, 03-supports/, 04-ateliers/, 05-formateur/, 06-evaluations/, simulations/, 07-relecture.md et journal.md. En reprise, ajoute ETAT.md avec le dernier jalon validé, les éléments en attente et les versions des documents à reprendre. Exporte les fichiers existants et propose un ZIP si possible. Garde le corrigé et les notes formateur à part des fichiers destinés aux apprenants.
+
+Charte et formats Office
+Demande template.pptx, template.docx et charte-technique.json si disponibles. Si la charte technique manque, analyse les modèles fournis et fais valider les correspondances entre dispositions PowerPoint et styles Word, les couleurs, les polices et les limites de densité. Si les outils ne permettent pas l'analyse, demande ces informations au formateur. Conserve les sources en brouillon tant que la charte requise manque.
+Les sections « FICHIER DU DÉPÔT » ci-dessous contiennent le code d'origine et les exemples. Si les fichiers sont lisibles intégralement et que l'exécution Python et les dépendances sont disponibles, reconstitue les scripts à l'identique sous les noms indiqués, place les modèles et la charte dans le même dossier de charte, puis exécute les générateurs. Consulte le début des scripts pour respecter leur format source. En cas d'alerte, corrige le Markdown et régénère. Quand l'outil exécute une autre méthode compatible, vérifie l'application effective du modèle fourni et indique la méthode utilisée.
+Produis le PPTX, les documents Word (mémo, cahier, énoncés, évaluation et feedback) et leurs PDF selon le besoin. Si le rendu Office en PDF est disponible, ouvre les pages rendues et vérifie les débordements et la lisibilité. Sinon, livre les formats produits et propose l'export PDF depuis Word ou PowerPoint. Distingue contrôle de structure et contrôle visuel dans 07-relecture.md.
+
+Google Forms
+Remplis les deux modèles JSON de Modeles.txt à partir de l'évaluation et du feedback validés. Vérifie le type de chaque question, les points et les bonnes réponses (exactement une pour un choix unique). Utilise le générateur fourni pour produire evaluation.gs et feedback.gs si possible. Si les scripts ne peuvent pas être générés, donne le questionnaire et son corrigé pour création manuelle dans Google Forms. Pour chaque script généré, indique au formateur d'ouvrir https://script.google.com, de créer un projet, de coller le script, d'exécuter creerFormulaire et d'accepter l'autorisation de Google. Demande-lui de vérifier le formulaire et de recopier les liens apprenant et édition dans son dossier. Propose une version imprimable.
+
+Agenda, partage et résultats
+Récupère les dates, heures, fuseau, lieu ou lien visio et les préparatifs confirmés. Propose une session par créneau et des rappels J-7 et J-1. Sur demande, utilise un connecteur offrant la création d'événements ou fournis un fichier .ics avec événements et rappels à importer. Pour la diffusion, propose le dépôt manuel dans Drive si le connecteur n'offre pas l'action attendue. Pour les résultats, analyse les réponses dans Sheets si l'accès est disponible ou demande un CSV, puis relie les constats aux objectifs et les améliorations au journal.
+
+=== FICHIER DU DÉPÔT : scripts/requirements.txt ===
+# Testé avec python-pptx 1.0.2 (Python 3.10)
+python-pptx
+python-docx
+lxml
+Pillow
+# Outils système nécessaires pour l'export PDF et le contrôle visuel :
+#   LibreOffice (soffice), Poppler (pdftoppm), ImageMagick (montage)
+
+=== FIN DU FICHIER : scripts/requirements.txt ===
+
+=== FICHIER DU DÉPÔT : scripts/docs/commun.py ===
+"""Fonctions partagées : lecture de la charte technique et du markdown inline."""
+import json, os, re, sys
+
+def charge_charte(dossier):
+    p = os.path.join(dossier, "charte-technique.json")
+    if not os.path.exists(p):
+        sys.exit(f"Erreur : {p} introuvable. Lancer d'abord la skill preparation-charte.")
+    c = json.load(open(p, encoding="utf-8"))
+    c["_dossier"] = dossier
+    return c
+
+INLINE = re.compile(r"(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)")
+
+def segments_inline(texte):
+    """Découpe 'du **gras**, du `code` et de l'*italique*' en [(texte, style)]."""
+    out = []
+    for morceau in INLINE.split(texte):
+        if not morceau:
+            continue
+        if morceau.startswith("**") and morceau.endswith("**"):
+            out.append((morceau[2:-2], "gras"))
+        elif morceau.startswith("`") and morceau.endswith("`"):
+            out.append((morceau[1:-1], "code"))
+        elif morceau.startswith("*") and morceau.endswith("*") and len(morceau) > 2:
+            out.append((morceau[1:-1], "italique"))
+        else:
+            out.append((morceau, None))
+    return out
+
+=== FIN DU FICHIER : scripts/docs/commun.py ===
+
+=== FICHIER DU DÉPÔT : scripts/docs/analyse_charte.py ===
+#!/usr/bin/env python3
+"""Analyse les templates d'une charte (template.pptx / template.docx) et écrit
+charte-technique.brouillon.json + un résumé lisible. Rien n'est inventé : tout
+provient des fichiers. Le formateur valide ensuite le mapping (skill preparation-charte).
+
+Usage : python3 analyse_charte.py chartes/<nom>
+"""
+import json, os, sys, zipfile
+from lxml import etree
+
+NS = {"a": "http://schemas.openxmlformats.org/drawingml/2006/main"}
+
+def theme_pptx(path):
+    """Couleurs et polices du thème, lues dans ppt/theme/theme*.xml."""
+    res = {"couleurs": {}, "polices": {}}
+    with zipfile.ZipFile(path) as z:
+        themes = sorted(n for n in z.namelist() if n.startswith("ppt/theme/theme"))
+        if not themes:
+            return res
+        root = etree.fromstring(z.read(themes[0]))
+    sch = root.find(".//a:clrScheme", NS)
+    if sch is not None:
+        for el in sch:
+            nom = etree.QName(el).localname
+            srgb = el.find("a:srgbClr", NS)
+            sysc = el.find("a:sysClr", NS)
+            if srgb is not None:
+                res["couleurs"][nom] = "#" + srgb.get("val")
+            elif sysc is not None and sysc.get("lastClr"):
+                res["couleurs"][nom] = "#" + sysc.get("lastClr")
+    for cle, tag in (("titres", "majorFont"), ("corps", "minorFont")):
+        f = root.find(f".//a:{tag}/a:latin", NS)
+        if f is not None:
+            res["polices"][cle] = f.get("typeface")
+    return res
+
+def devine(noms, *mots):
+    for mot in mots:
+        for n in noms:
+            if mot in n.lower():
+                return n
+    return None
+
+def analyse_pptx(path):
+    from pptx import Presentation
+    prs = Presentation(path)
+    layouts = {}
+    for m in prs.slide_masters:
+        for l in m.slide_layouts:
+            layouts[l.name] = [
+                {"idx": ph.placeholder_format.idx, "type": str(ph.placeholder_format.type).split(".")[-1].split(" ")[0],
+                 "nom": ph.name}
+                for ph in l.placeholders]
+    noms = list(layouts)
+    proposition = {
+        "titre": devine(noms, "title slide", "titre", "diapositive de titre", "title"),
+        "section": devine(noms, "section"),
+        "contenu": devine(noms, "title and content", "titre et contenu", "content", "contenu"),
+        "deux-colonnes": devine(noms, "two content", "deux contenus", "comparison", "comparaison"),
+        "image": devine(noms, "picture", "image"),
+        "code": devine(noms, "code", "title only", "titre seul"),
+        "fin": devine(noms, "end", "fin", "closing"),
+    }
+    return layouts, proposition, (prs.slide_width, prs.slide_height)
+
+def analyse_docx(path):
+    from docx import Document
+    from docx.enum.style import WD_STYLE_TYPE
+    doc = Document(path)
+    para = [s.name for s in doc.styles if s.type == WD_STYLE_TYPE.PARAGRAPH]
+    tabl = [s.name for s in doc.styles if s.type == WD_STYLE_TYPE.TABLE]
+    def p(*m):
+        return devine(para, *m)
+    proposition = {
+        "titre1": p("heading 1", "titre 1"), "titre2": p("heading 2", "titre 2"),
+        "titre3": p("heading 3", "titre 3"), "paragraphe": p("normal"),
+        "puce": p("list bullet", "liste à puces"), "puce2": p("list bullet 2", "liste à puces 2"),
+        "numero": p("list number", "liste numérotée"), "citation": p("quote", "citation"),
+        "code": p("code", "html preformatted", "macro"), "tableau": devine(tabl, "table grid", "grille", "table"),
+    }
+    return para, tabl, proposition
+
+def main():
+    if len(sys.argv) != 2:
+        sys.exit(__doc__)
+    d = sys.argv[1]
+    brouillon = {"pptx": None, "docx": None, "palette": {}, "polices": {}}
+    lignes = [f"# Analyse de la charte `{d}`", ""]
+    pp = os.path.join(d, "template.pptx")
+    if os.path.exists(pp):
+        layouts, prop, (w, h) = analyse_pptx(pp)
+        th = theme_pptx(pp)
+        brouillon["palette"], brouillon["polices"] = th["couleurs"], th["polices"]
+        brouillon["pptx"] = {"template": "template.pptx", "layouts": prop,
+                             "limites": {"puces_max": 6, "caracteres_par_puce": 90, "lignes_code_max": 14, "mots_max": 60},
+                             "police_code": None, "taille_code_pt": 14}
+        lignes += [f"## template.pptx — format {round(w/914400*2.54,1)} × {round(h/914400*2.54,1)} cm", "",
+                   "| Mise en page | Zones (idx : type) |", "|---|---|"]
+        for n, phs in layouts.items():
+            lignes.append(f"| {n} | " + ", ".join(f"{p['idx']}:{p['type']}" for p in phs) + " |")
+        lignes += ["", "### Thème", "", "| Rôle | Couleur |", "|---|---|"]
+        lignes += [f"| {k} | {v} |" for k, v in th["couleurs"].items()]
+        lignes += ["", f"Polices : titres = {th['polices'].get('titres')}, corps = {th['polices'].get('corps')}", "",
+                   "### Correspondance proposée (À VALIDER)", ""]
+        lignes += [f"- {k} → {v if v else '**aucune mise en page trouvée**'}" for k, v in prop.items()]
+    else:
+        lignes.append("⚠️ template.pptx absent.")
+    dp = os.path.join(d, "template.docx")
+    if os.path.exists(dp):
+        para, tabl, prop = analyse_docx(dp)
+        brouillon["docx"] = {"template": "template.docx", "styles": prop, "police_code": None}
+        lignes += ["", "## template.docx", "", "Styles de paragraphe : " + ", ".join(para), "",
+                   "Styles de tableau : " + ", ".join(tabl), "", "### Correspondance proposée (À VALIDER)", ""]
+        lignes += [f"- {k} → {v if v else '**aucun style trouvé**'}" for k, v in prop.items()]
+    else:
+        lignes.append("\n⚠️ template.docx absent.")
+    lignes += ["", "⚠️ `police_code` est vide : à choisir avec le formateur (police monospace installée chez lui)."]
+    json.dump(brouillon, open(os.path.join(d, "charte-technique.brouillon.json"), "w", encoding="utf-8"),
+              ensure_ascii=False, indent=2)
+    open(os.path.join(d, "analyse.md"), "w", encoding="utf-8").write("\n".join(lignes) + "\n")
+    print("\n".join(lignes))
+
+if __name__ == "__main__":
+    main()
+
+=== FIN DU FICHIER : scripts/docs/analyse_charte.py ===
+
+=== FICHIER DU DÉPÔT : scripts/docs/genere_pptx.py ===
+#!/usr/bin/env python3
+"""Génère un .pptx à partir d'un slides.md et du template de la charte.
+Aucune couleur ni police n'est posée en dur : tout vient des mises en page du template
+(seule exception : la police des blocs de code, définie dans la charte).
+
+Usage : python3 genere_pptx.py slides.md --charte chartes/<nom> --out supports.pptx
+
+Format de slides.md : diapositives séparées par une ligne '---'.
+  <!-- layout: contenu -->      (titre | section | contenu | deux-colonnes | image | code | fin ; défaut : contenu)
+  # Titre de la diapositive
+  - puce            (indentation de 2 espaces = niveau suivant ; **gras**, *italique*, `code`)
+  ```langage        (bloc de code)
+  |||               (deux-colonnes : sépare colonne gauche / droite)
+  ![légende](chemin/image.png)
+  Notes:            (tout ce qui suit = notes orateur)
+"""
+import argparse, os, re, sys
+from pptx import Presentation
+from pptx.util import Pt, Emu
+from pptx.enum.shapes import PP_PLACEHOLDER
+from pptx.oxml.ns import qn
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from commun import charge_charte, segments_inline
+
+EXCLUS = {PP_PLACEHOLDER.TITLE, PP_PLACEHOLDER.CENTER_TITLE, PP_PLACEHOLDER.DATE,
+          PP_PLACEHOLDER.FOOTER, PP_PLACEHOLDER.SLIDE_NUMBER}
+
+def decoupe(md):
+    slides, cur, dans_code = [], [], False
+    for ligne in md.splitlines():
+        if ligne.strip().startswith("```"):
+            dans_code = not dans_code
+        if ligne.strip() == "---" and not dans_code:
+            slides.append(cur); cur = []
+        else:
+            cur.append(ligne)
+    slides.append(cur)
+    return [s for s in slides if any(l.strip() for l in s)]
+
+def parse(lignes):
+    s = {"layout": "contenu", "titre": "", "colonnes": [[]], "notes": [], "images": []}
+    dans_notes = dans_code = False
+    for l in lignes:
+        m = re.match(r"\s*<!--\s*layout:\s*([\w-]+)\s*-->", l)
+        if m:
+            s["layout"] = m.group(1); continue
+        if dans_notes:
+            s["notes"].append(l); continue
+        if l.strip().startswith("```"):
+            dans_code = not dans_code
+            if dans_code:
+                s["colonnes"][-1].append(("code_debut", 0, ""))
+            continue
+        if dans_code:
+            s["colonnes"][-1].append(("code", 0, l)); continue
+        if l.strip() == "Notes:":
+            dans_notes = True; continue
+        if l.startswith("# ") and not s["titre"]:
+            s["titre"] = l[2:].strip(); continue
+        if l.strip() == "|||":
+            s["colonnes"].append([]); continue
+        m = re.match(r"\s*!\[(.*?)\]\((.+?)\)", l)
+        if m:
+            s["images"].append((m.group(1), m.group(2))); continue
+        m = re.match(r"^(\s*)[-*]\s+(.*)", l)
+        if m:
+            s["colonnes"][-1].append(("puce", len(m.group(1)) // 2, m.group(2))); continue
+        if l.strip():
+            s["colonnes"][-1].append(("texte", 0, l.strip()))
+    return s
+
+def sans_puce(p):
+    pPr = p._p.get_or_add_pPr()
+    for t in ("a:buNone", "a:buChar", "a:buAutoNum"):
+        for el in pPr.findall(qn(t)):
+            pPr.remove(el)
+    pPr.insert(0, pPr.makeelement(qn("a:buNone"), {}))
+
+def remplit(tf, elements, charte):
+    tf.clear()
+    premier = True
+    pc = charte["pptx"].get("police_code")
+    tc = charte["pptx"].get("taille_code_pt", 14)
+    for genre, niveau, texte in elements:
+        if genre == "code_debut":
+            continue
+        p = tf.paragraphs[0] if premier else tf.add_paragraph()
+        premier = False
+        if genre == "code":
+            r = p.add_run(); r.text = texte if texte else " "
+            if pc: r.font.name = pc
+            r.font.size = Pt(tc)
+            sans_puce(p)
+            continue
+        p.level = min(niveau, 4)
+        if genre == "texte":
+            sans_puce(p)
+        for t, style in segments_inline(texte):
+            r = p.add_run(); r.text = t
+            if style == "gras": r.font.bold = True
+            elif style == "italique": r.font.italic = True
+            elif style == "code" and pc: r.font.name = pc
+
+def controle(i, s, lim, alertes):
+    puces = [e for c in s["colonnes"] for e in c if e[0] == "puce"]
+    code = [e for c in s["colonnes"] for e in c if e[0] == "code"]
+    mots = sum(len(e[2].split()) for c in s["colonnes"] for e in c if e[0] != "code")
+    if len(puces) > lim.get("puces_max", 99):
+        alertes.append(f"Diapo {i} : {len(puces)} puces (max {lim['puces_max']})")
+    for e in puces:
+        if len(e[2]) > lim.get("caracteres_par_puce", 999):
+            alertes.append(f"Diapo {i} : puce trop longue ({len(e[2])} car.) « {e[2][:40]}… »")
+    if len(code) > lim.get("lignes_code_max", 999):
+        alertes.append(f"Diapo {i} : {len(code)} lignes de code (max {lim['lignes_code_max']})")
+    if mots > lim.get("mots_max", 9999):
+        alertes.append(f"Diapo {i} : {mots} mots (max {lim['mots_max']})")
+    if not s["titre"]:
+        alertes.append(f"Diapo {i} : pas de titre")
+    if "[À VÉRIFIER]" in "\n".join(e[2] for c in s["colonnes"] for e in c) + s["titre"]:
+        alertes.append(f"Diapo {i} : contient [À VÉRIFIER]")
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("slides"); ap.add_argument("--charte", required=True); ap.add_argument("--out", required=True)
+    a = ap.parse_args()
+    charte = charge_charte(a.charte)
+    cp = charte.get("pptx") or sys.exit("Erreur : la charte n'a pas de section pptx.")
+    prs = Presentation(os.path.join(a.charte, cp["template"]))
+    for sid in list(prs.slides._sldIdLst):          # retire les diapositives d'exemple du template
+        prs.part.drop_rel(sid.rId); prs.slides._sldIdLst.remove(sid)
+    par_nom = {l.name: l for m in prs.slide_masters for l in m.slide_layouts}
+    base = os.path.dirname(os.path.abspath(a.slides))
+    alertes = []
+    for i, brut in enumerate(decoupe(open(a.slides, encoding="utf-8").read()), 1):
+        s = parse(brut)
+        nom = cp["layouts"].get(s["layout"])
+        if not nom or nom not in par_nom:
+            sys.exit(f"Erreur diapo {i} : layout logique '{s['layout']}' sans correspondance dans la charte.")
+        slide = prs.slides.add_slide(par_nom[nom])
+        if slide.shapes.title is not None:
+            slide.shapes.title.text = s["titre"]
+        phs = sorted((p for p in slide.placeholders if p.placeholder_format.type not in EXCLUS),
+                     key=lambda p: p.placeholder_format.idx)
+        photos = [p for p in phs if p.placeholder_format.type == PP_PLACEHOLDER.PICTURE]
+        textes = [p for p in phs if p.placeholder_format.type != PP_PLACEHOLDER.PICTURE and p.has_text_frame]
+        utilises = set()
+        for col, ph in zip([c for c in s["colonnes"] if c], textes):
+            remplit(ph.text_frame, col, charte); utilises.add(ph.placeholder_format.idx)
+        if len([c for c in s["colonnes"] if c]) > len(textes):
+            alertes.append(f"Diapo {i} : plus de colonnes de contenu que de zones dans la mise en page '{nom}'")
+        for (legende, chemin) in s["images"]:
+            chemin = chemin if os.path.isabs(chemin) else os.path.join(base, chemin)
+            if not os.path.exists(chemin):
+                alertes.append(f"Diapo {i} : image introuvable {chemin}"); continue
+            if photos:
+                ph = photos.pop(0); idx = ph.placeholder_format.idx
+                ph.insert_picture(chemin); utilises.add(idx)
+            else:
+                libres = [p for p in textes if p.placeholder_format.idx not in utilises]
+                zone = libres[0] if libres else None
+                if zone is None:
+                    alertes.append(f"Diapo {i} : pas de zone libre pour l'image {chemin}"); continue
+                from PIL import Image
+                w, h = Image.open(chemin).size
+                ratio = min(zone.width / w, zone.height / h)
+                pw, phh = int(w * ratio), int(h * ratio)
+                slide.shapes.add_picture(chemin, zone.left + (zone.width - pw) // 2,
+                                         zone.top + (zone.height - phh) // 2, pw, phh)
+        for ph in list(slide.placeholders):          # pas de « Cliquez pour ajouter du texte »
+            t = ph.placeholder_format.type
+            if t in (PP_PLACEHOLDER.TITLE, PP_PLACEHOLDER.CENTER_TITLE) and s["titre"]:
+                continue
+            if ph.placeholder_format.idx in utilises or t in (PP_PLACEHOLDER.SLIDE_NUMBER, PP_PLACEHOLDER.FOOTER, PP_PLACEHOLDER.DATE):
+                continue
+            ph._element.getparent().remove(ph._element)
+        notes = "\n".join(s["notes"]).strip()
+        if notes:
+            slide.notes_slide.notes_text_frame.text = notes
+        elif s["layout"] not in ("titre", "section", "fin"):
+            alertes.append(f"Diapo {i} : pas de notes orateur")
+        controle(i, s, cp.get("limites", {}), alertes)
+    prs.save(a.out)
+    print(f"✔ {a.out} — {len(prs.slides)} diapositives")
+    if alertes:
+        print("\nAlertes :"); print("\n".join(f"- {x}" for x in alertes))
+        sys.exit(2)
+
+if __name__ == "__main__":
+    main()
+
+=== FIN DU FICHIER : scripts/docs/genere_pptx.py ===
+
+=== FICHIER DU DÉPÔT : scripts/docs/genere_docx.py ===
+#!/usr/bin/env python3
+"""Génère un .docx (cahier formateur, énoncés, cheatsheet, évaluation papier…) à partir
+d'un markdown et du template.docx de la charte. Seuls les styles du template sont utilisés.
+
+Usage : python3 genere_docx.py document.md --charte chartes/<nom> --out document.docx
+
+Markdown pris en charge : # ## ### titres, paragraphes, - puces (2 espaces = niveau 2),
+1. listes numérotées, - [ ] cases à cocher, > citations, ```code```, tableaux | a | b |,
+![légende](image.png), <!-- saut-de-page -->, **gras**, *italique*, `code`.
+"""
+import argparse, os, re, sys
+from docx import Document
+from docx.shared import Pt
+from docx.oxml.ns import qn
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from commun import charge_charte, segments_inline
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("md"); ap.add_argument("--charte", required=True); ap.add_argument("--out", required=True)
+    a = ap.parse_args()
+    charte = charge_charte(a.charte)
+    cd = charte.get("docx") or sys.exit("Erreur : la charte n'a pas de section docx.")
+    doc = Document(os.path.join(a.charte, cd["template"]))
+    body = doc.element.body
+    for el in list(body):                         # vide le contenu d'exemple, garde la mise en page
+        if el.tag != qn("w:sectPr"):
+            body.remove(el)
+    noms = {s.name for s in doc.styles}
+    alertes = set()
+    pc = cd.get("police_code")
+    base = os.path.dirname(os.path.abspath(a.md))
+
+    def style(cle, defaut="paragraphe"):
+        n = cd["styles"].get(cle) or cd["styles"].get(defaut)
+        if n not in noms:
+            alertes.add(f"style '{cle}' → '{n}' absent du template, remplacé par Normal")
+            return "Normal"
+        return n
+
+    def para(texte, cle):
+        p = doc.add_paragraph(style=style(cle))
+        for t, st in segments_inline(texte):
+            r = p.add_run(t)
+            if st == "gras": r.bold = True
+            elif st == "italique": r.italic = True
+            elif st == "code" and pc: r.font.name = pc
+        return p
+
+    lignes = open(a.md, encoding="utf-8").read().splitlines()
+    i = 0
+    while i < len(lignes):
+        l = lignes[i]
+        if l.strip().startswith("```"):
+            i += 1; bloc = []
+            while i < len(lignes) and not lignes[i].strip().startswith("```"):
+                bloc.append(lignes[i]); i += 1
+            i += 1
+            for b in bloc or [""]:
+                p = doc.add_paragraph(style=style("code"))
+                r = p.add_run(b)
+                if pc: r.font.name = pc
+                p.paragraph_format.space_after = Pt(0)
+            continue
+        if l.strip().startswith("|"):
+            rangees = []
+            while i < len(lignes) and lignes[i].strip().startswith("|"):
+                cells = [c.strip() for c in lignes[i].strip().strip("|").split("|")]
+                if not all(re.fullmatch(r":?-{2,}:?", c) for c in cells if c):
+                    rangees.append(cells)
+                i += 1
+            if rangees:
+                n = max(len(r) for r in rangees)
+                t = doc.add_table(rows=len(rangees), cols=n)
+                ts = cd["styles"].get("tableau")
+                if ts in noms: t.style = ts
+                elif ts: alertes.add(f"style de tableau '{ts}' absent du template")
+                for ri, r in enumerate(rangees):
+                    for ci in range(n):
+                        cell = t.cell(ri, ci); cell.text = ""
+                        p = cell.paragraphs[0]
+                        for txt, st in segments_inline(r[ci] if ci < len(r) else ""):
+                            run = p.add_run(txt)
+                            run.bold = (ri == 0) or st == "gras"
+                            if st == "code" and pc: run.font.name = pc
+            continue
+        m = re.match(r"^(#{1,3})\s+(.*)", l)
+        if m:
+            para(m.group(2), f"titre{len(m.group(1))}")
+        elif re.match(r"\s*<!--\s*saut-de-page\s*-->", l):
+            doc.add_page_break()
+        elif (m := re.match(r"\s*!\[(.*?)\]\((.+?)\)", l)):
+            ch = m.group(2) if os.path.isabs(m.group(2)) else os.path.join(base, m.group(2))
+            if os.path.exists(ch):
+                s = doc.sections[-1]
+                doc.add_picture(ch, width=s.page_width - s.left_margin - s.right_margin)
+                if m.group(1): para(m.group(1), "legende")
+            else:
+                alertes.add(f"image introuvable : {ch}")
+        elif (m := re.match(r"^(\s*)[-*]\s+\[( |x)\]\s+(.*)", l)):
+            para(("☑ " if m.group(2) == "x" else "☐ ") + m.group(3), "paragraphe")
+        elif (m := re.match(r"^(\s*)[-*]\s+(.*)", l)):
+            para(m.group(2), "puce2" if len(m.group(1)) >= 2 else "puce")
+        elif (m := re.match(r"^\s*\d+[.)]\s+(.*)", l)):
+            para(m.group(1), "numero")
+        elif l.startswith(">"):
+            para(l.lstrip("> ").strip(), "citation")
+        elif l.strip():
+            para(l.strip(), "paragraphe")
+        i += 1
+    doc.save(a.out)
+    print(f"✔ {a.out}")
+    if "[À VÉRIFIER]" in "\n".join(lignes):
+        alertes.add("le document contient encore [À VÉRIFIER]")
+    if alertes:
+        print("\nAlertes :"); print("\n".join(f"- {x}" for x in sorted(alertes))); sys.exit(2)
+
+if __name__ == "__main__":
+    main()
+
+=== FIN DU FICHIER : scripts/docs/genere_docx.py ===
+
+=== FICHIER DU DÉPÔT : scripts/docs/verifie_charte.py ===
+#!/usr/bin/env python3
+"""Vérifie qu'un .pptx ou .docx final respecte la charte : aucune police ni couleur posée
+en dur en dehors de celles de la charte (utile si le fichier a été retouché à la main).
+
+Usage : python3 verifie_charte.py fichier.pptx|fichier.docx --charte chartes/<nom>
+"""
+import argparse, os, re, sys, zipfile
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from commun import charge_charte
+
+def main():
+    ap = argparse.ArgumentParser(); ap.add_argument("fichier"); ap.add_argument("--charte", required=True)
+    a = ap.parse_args()
+    c = charge_charte(a.charte)
+    polices = {v for v in c.get("polices", {}).values() if v}
+    for sec in ("pptx", "docx"):
+        if c.get(sec) and c[sec].get("police_code"):
+            polices.add(c[sec]["police_code"])
+    polices |= set(c.get("polices_autorisees", []))
+    couleurs = {v.upper().lstrip("#") for v in c.get("palette", {}).values()}
+    couleurs |= {v.upper().lstrip("#") for v in c.get("couleurs_autorisees", [])}
+    pb = {}
+    with zipfile.ZipFile(a.fichier) as z:
+        for n in z.namelist():
+            if not re.match(r"(ppt/slides/slide\d+|word/document)\.xml$", n):
+                continue
+            x = z.read(n).decode("utf-8", "ignore")
+            for f in set(re.findall(r'<a:latin typeface="([^"+][^"]*)"', x)) | set(re.findall(r'w:ascii="([^"]+)"', x)):
+                if f not in polices:
+                    pb.setdefault(n, []).append(f"police hors charte : {f}")
+            for col in set(re.findall(r'<a:srgbClr val="([0-9A-Fa-f]{6})"', x)) | set(re.findall(r'<w:color w:val="([0-9A-Fa-f]{6})"', x)):
+                if col.upper() not in couleurs:
+                    pb.setdefault(n, []).append(f"couleur hors charte : #{col}")
+    if not pb:
+        print("✔ Charte respectée (polices et couleurs)."); return
+    for n, l in sorted(pb.items()):
+        print(f"{n} :"); [print(f"  - {e}") for e in sorted(set(l))]
+    sys.exit(2)
+
+if __name__ == "__main__":
+    main()
+
+=== FIN DU FICHIER : scripts/docs/verifie_charte.py ===
+
+=== FICHIER DU DÉPÔT : scripts/docs/exemple/slides.md ===
+<!-- layout: titre -->
+# Git au quotidien
+Formation technicien — 1 journée
+---
+<!-- layout: section -->
+# 1. Pourquoi versionner ?
+---
+# Ce que Git enregistre
+- Un **commit** = un instantané du projet
+- Chaque commit pointe vers son parent
+  - sauf le premier
+- Les branches sont de simples *pointeurs* vers un commit
+Notes:
+Partir de l'exemple du fil rouge : le site de la boulangerie.
+---
+<!-- layout: code -->
+# Créer une branche
+```bash
+git switch -c feature/menu
+git add menu.html
+git commit -m "Ajoute le menu"
+```
+Notes:
+Montrer git log --oneline après.
+---
+<!-- layout: deux-colonnes -->
+# merge ou rebase ?
+- merge garde l'historique réel
+- crée un commit de fusion
+|||
+- rebase réécrit l'historique
+- à éviter sur une branche partagée [À VÉRIFIER]
+Notes:
+Question piège classique.
+---
+<!-- layout: image -->
+# Schéma du flux
+![Flux des branches](schema.png)
+Notes:
+Schéma.
+---
+# Trop chargée
+- point 1 avec un texte très long qui dépasse largement la limite de caractères prévue par la charte pour une puce
+- point 2
+- point 3
+- point 4
+- point 5
+- point 6
+- point 7
+Notes:
+test
+
+=== FIN DU FICHIER : scripts/docs/exemple/slides.md ===
+
+=== FICHIER DU DÉPÔT : scripts/docs/exemple/cahier.md ===
+# Cahier du formateur — Git au quotidien
+## Avant la formation
+- [ ] Installer Git (version indiquée dans sources.md)
+- [x] Préparer le dépôt du fil rouge
+## Contraintes matérielles
+| Contrainte | Vérification | Plan B |
+|---|---|---|
+| Pas de droits admin | `git --version` | Git portable |
+## Déroulé
+1. Accueil
+2. Concepts
+> Rappel : toujours partir du fil rouge.
+```bash
+git clone https://exemple/depot.git
+```
+<!-- saut-de-page -->
+### Annexe
+Texte avec **gras** et `code`.
+
+=== FIN DU FICHIER : scripts/docs/exemple/cahier.md ===
+
+=== FICHIER DU DÉPÔT : scripts/forms/genere_apps_script.py ===
+#!/usr/bin/env python3
+"""Génère un script Google Apps Script qui crée un Google Form (quiz ou questionnaire)
+à partir d'un fichier JSON d'évaluation (format : templates/evaluation-forms.json).
+
+Usage : python3 genere_apps_script.py evaluation.json > creer_formulaire.gs
+
+API utilisée (Apps Script, service Forms) : FormApp.create(title, isPublished), Form.setIsQuiz,
+addMultipleChoiceItem, addCheckboxItem, addParagraphTextItem, addScaleItem,
+createChoice(value, isCorrect), setPoints, setFeedbackForCorrect/Incorrect,
+FormApp.createFeedback().setText().build(), getPublishedUrl, getEditUrl.
+"""
+import json, sys
+
+TYPES = {"choix_unique", "choix_multiple", "texte_long", "echelle"}
+
+def js(s):
+    return json.dumps(s if s is not None else "", ensure_ascii=False)
+
+def erreur(msg):
+    sys.exit(f"Erreur : {msg}")
+
+def valide(d):
+    if not d.get("titre"):
+        erreur("champ 'titre' manquant")
+    qs = d.get("questions") or []
+    if not qs:
+        erreur("aucune question")
+    for i, q in enumerate(qs, 1):
+        t = q.get("type")
+        if t not in TYPES:
+            erreur(f"question {i} : type '{t}' inconnu ({', '.join(sorted(TYPES))})")
+        if not q.get("titre"):
+            erreur(f"question {i} : titre manquant")
+        if t in ("choix_unique", "choix_multiple"):
+            ch = q.get("choix") or []
+            if len(ch) < 2:
+                erreur(f"question {i} : au moins 2 choix")
+            nb_ok = sum(1 for c in ch if c.get("correct"))
+            if d.get("quiz"):
+                if t == "choix_unique" and nb_ok != 1:
+                    erreur(f"question {i} : un choix unique doit avoir exactement 1 bonne réponse (trouvé {nb_ok})")
+                if t == "choix_multiple" and nb_ok < 1:
+                    erreur(f"question {i} : au moins 1 bonne réponse")
+
+def main():
+    if len(sys.argv) != 2:
+        sys.exit(__doc__)
+    d = json.load(open(sys.argv[1], encoding="utf-8"))
+    valide(d)
+    quiz = bool(d.get("quiz"))
+    L = []
+    L.append("function creerFormulaire() {")
+    L.append(f"  var form = FormApp.create({js(d['titre'])}, true);")
+    if d.get("description"):
+        L.append(f"  form.setDescription({js(d['description'])});")
+    if quiz:
+        L.append("  form.setIsQuiz(true);")
+    L.append("  var item;")
+    for q in d["questions"]:
+        t = q["type"]
+        L.append("")
+        if t in ("choix_unique", "choix_multiple"):
+            meth = "addMultipleChoiceItem" if t == "choix_unique" else "addCheckboxItem"
+            L.append(f"  item = form.{meth}().setTitle({js(q['titre'])});")
+            choix = ", ".join(
+                f"item.createChoice({js(c['texte'])}, {'true' if (quiz and c.get('correct')) else 'false'})"
+                for c in q["choix"])
+            L.append(f"  item.setChoices([{choix}]);")
+            if quiz:
+                L.append(f"  item.setPoints({int(q.get('points', 1))});")
+                for cle, meth_fb in (("feedback_correct", "setFeedbackForCorrect"),
+                                     ("feedback_incorrect", "setFeedbackForIncorrect")):
+                    if q.get(cle):
+                        L.append(f"  item.{meth_fb}(FormApp.createFeedback().setText({js(q[cle])}).build());")
+        elif t == "texte_long":
+            L.append(f"  item = form.addParagraphTextItem().setTitle({js(q['titre'])});")
+        elif t == "echelle":
+            L.append(f"  item = form.addScaleItem().setTitle({js(q['titre'])})"
+                     f".setBounds({int(q.get('min', 1))}, {int(q.get('max', 5))});")
+            if q.get("label_min") or q.get("label_max"):
+                L.append(f"  item.setLabels({js(q.get('label_min'))}, {js(q.get('label_max'))});")
+        if q.get("aide"):
+            L.append(f"  item.setHelpText({js(q['aide'])});")
+        L.append(f"  item.setRequired({'true' if q.get('obligatoire', True) else 'false'});")
+    L.append("")
+    L.append("  Logger.log('Lien à envoyer aux apprenants : ' + form.getPublishedUrl());")
+    L.append("  Logger.log('Lien d\\'édition (formateur) : ' + form.getEditUrl());")
+    L.append("}")
+    print("\n".join(L))
+
+if __name__ == "__main__":
+    main()
+
+=== FIN DU FICHIER : scripts/forms/genere_apps_script.py ===

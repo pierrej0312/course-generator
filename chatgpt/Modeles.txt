@@ -1,0 +1,408 @@
+COURSE GENERATOR — MODÈLES
+
+Les chemins identifient les modèles d'origine. Utilise leur contenu dans le chat, même si aucune arborescence locale n'est accessible.
+
+=== FICHIER DU DÉPÔT : templates/atelier.md ===
+# Atelier {{n}} — {{titre}}
+
+- Durée :
+- Place dans le fil rouge : (ce qui existe avant / ce qui existera après)
+- Objectifs :
+- Prérequis : (ateliers précédents, fichiers fournis)
+
+## Contexte
+(Situation concrète, liée au fil rouge — pas d'énoncé interchangeable.)
+
+## Consignes
+1.
+
+## Critères de réussite vérifiables
+- [ ]
+
+## Pour aller plus loin (apprenants rapides)
+-
+
+## Corrigé
+→ `corrige/`
+
+=== FIN DU FICHIER : templates/atelier.md ===
+
+=== FICHIER DU DÉPÔT : templates/brief.md ===
+# Brief — {{titre du cours}}
+
+| Élément | Valeur |
+|---|---|
+| Formateur | identifiant → `formateurs/<identifiant>/` |
+| Charte | `chartes/<nom>/` (vide = charte par défaut du formateur) |
+| Sujet | |
+| Client / contexte | |
+| Durée | demi-journée / journée / {{n}} jours |
+| Horaires | |
+| Modalité | présentiel / distanciel / hybride |
+| Niveau | débutant / technicien / ingénieur |
+| Nombre d'apprenants | |
+| Prérequis attendus | |
+| Matériel des apprenants | OS, droits admin, RAM, réseau, double écran… |
+| Contraintes particulières | proxy, pas d'internet, logiciels imposés… |
+
+## Objectifs pédagogiques
+À la fin, l'apprenant sera capable de :
+1.
+
+## Hors périmètre (décidé)
+-
+
+## Anciens supports disponibles
+-
+
+=== FIN DU FICHIER : templates/brief.md ===
+
+=== FICHIER DU DÉPÔT : templates/cahier-formateur.md ===
+# Cahier du formateur — {{titre du cours}}
+
+## Avant la formation (J-7 / J-1)
+- [ ] Installations côté apprenants (versions exactes + lien officiel)
+- [ ] Installations côté formateur
+- [ ] Fichiers d'atelier préparés et testés
+- [ ] Test de l'environnement sur une machine « propre »
+
+## Contraintes matérielles des apprenants
+| Contrainte | Vérification | Plan B |
+|---|---|---|
+
+## Le jour J
+- [ ] Vérifications d'ouverture
+
+## Déroulé commenté
+| Séquence | Messages clés | Pièges fréquents | Timing |
+|---|---|---|---|
+
+## Questions probables (issues de la validation)
+| Question | Réponse préparée | Source |
+|---|---|---|
+
+## Problèmes connus et solutions
+-
+
+=== FIN DU FICHIER : templates/cahier-formateur.md ===
+
+=== FICHIER DU DÉPÔT : templates/cheatsheet.md ===
+# Cheatsheet — {{titre du cours}}
+
+> Une page recto (ou recto-verso max). Uniquement ce que l'apprenant consulte en pratique.
+
+## {{bloc 1}}
+| Commande / notion | Ce que ça fait |
+|---|---|
+
+=== FIN DU FICHIER : templates/cheatsheet.md ===
+
+=== FICHIER DU DÉPÔT : templates/evaluation-forms.json ===
+{
+  "titre": "Évaluation — {{titre du cours}}",
+  "description": "Durée conseillée : 15 min.",
+  "quiz": true,
+  "questions": [
+    {
+      "type": "choix_unique",
+      "titre": "Question à une seule bonne réponse",
+      "aide": "Optionnel : précision affichée sous la question",
+      "points": 1,
+      "choix": [
+        {"texte": "Bonne réponse", "correct": true},
+        {"texte": "Distracteur plausible 1"},
+        {"texte": "Distracteur plausible 2"}
+      ],
+      "feedback_correct": "Pourquoi c'est juste (renvoi à la séquence du cours).",
+      "feedback_incorrect": "Indice ou renvoi vers la slide / l'atelier concerné."
+    },
+    {
+      "type": "choix_multiple",
+      "titre": "Question à plusieurs bonnes réponses",
+      "points": 2,
+      "choix": [
+        {"texte": "Bonne réponse A", "correct": true},
+        {"texte": "Bonne réponse B", "correct": true},
+        {"texte": "Distracteur"}
+      ]
+    },
+    {
+      "type": "texte_long",
+      "titre": "Question ouverte (correction manuelle)",
+      "obligatoire": false
+    }
+  ]
+}
+
+=== FIN DU FICHIER : templates/evaluation-forms.json ===
+
+=== FICHIER DU DÉPÔT : templates/evaluation.md ===
+# Évaluation — {{titre du cours}}
+
+- Type : quiz / exercice pratique / mise en situation
+- Durée :
+- Objectifs évalués : (renvoi aux objectifs du brief)
+
+## Questions / épreuves
+1.
+
+## Barème et corrigé
+
+=== FIN DU FICHIER : templates/evaluation.md ===
+
+=== FICHIER DU DÉPÔT : templates/feedback-forms.json ===
+{
+  "titre": "Votre avis — {{titre du cours}}",
+  "description": "Questionnaire anonyme, 3 minutes.",
+  "quiz": false,
+  "questions": [
+    {"type": "echelle", "titre": "Les objectifs annoncés ont-ils été atteints ?", "min": 1, "max": 5, "label_min": "Pas du tout", "label_max": "Totalement"},
+    {"type": "choix_unique", "titre": "Le rythme était…", "choix": [{"texte": "Trop lent"}, {"texte": "Adapté"}, {"texte": "Trop rapide"}]},
+    {"type": "echelle", "titre": "Utilité des ateliers", "min": 1, "max": 5},
+    {"type": "echelle", "titre": "Difficulté des ateliers", "min": 1, "max": 5, "label_min": "Trop facile", "label_max": "Trop difficile"},
+    {"type": "texte_long", "titre": "Ce que vous retenez en priorité", "obligatoire": false},
+    {"type": "texte_long", "titre": "Ce qui vous a manqué", "obligatoire": false},
+    {"type": "texte_long", "titre": "Commentaire libre", "obligatoire": false}
+  ]
+}
+
+=== FIN DU FICHIER : templates/feedback-forms.json ===
+
+=== FICHIER DU DÉPÔT : templates/feedback.md ===
+# Questionnaire de feedback — {{titre du cours}}
+
+1. Les objectifs annoncés ont-ils été atteints ? (1-5)
+2. Rythme : trop lent / adapté / trop rapide
+3. Ateliers : utilité (1-5) et difficulté (1-5)
+4. Ce que tu retiens en priorité :
+5. Ce qui t'a manqué :
+6. Commentaire libre :
+
+=== FIN DU FICHIER : templates/feedback.md ===
+
+=== FICHIER DU DÉPÔT : templates/journal.md ===
+# Journal — {{titre du cours}}
+
+| Date | Étape | Décision | Raison |
+|---|---|---|---|
+
+=== FIN DU FICHIER : templates/journal.md ===
+
+=== FICHIER DU DÉPÔT : templates/plan.md ===
+# Plan — {{titre du cours}}
+
+Durée totale : | Niveau : | Modalité :
+
+## Fil rouge
+Projet / scénario suivi pendant toute la formation :
+
+## Déroulé
+
+| Horaire | Séquence | Objectif | Méthode (théorie / démo / atelier) | Durée | Atelier lié |
+|---|---|---|---|---|---|
+
+## Mis de côté (→ bibliothèque)
+-
+
+=== FIN DU FICHIER : templates/plan.md ===
+
+=== FICHIER DU DÉPÔT : templates/simulation.md ===
+# Simulation — {{cible : plan / atelier n}} — {{profil}}
+
+- Date :
+- Profil simulé : avocat du diable / apprenant {{niveau}} {{présentiel|distanciel}}
+- Document analysé :
+
+## Constats
+| # | Moment / section | Problème | Gravité (bloquant / gênant / mineur) | Proposition |
+|---|---|---|---|---|
+
+## Questions que poserait l'apprenant
+-
+
+## Décision du formateur
+(à remplir : retenu / rejeté + raison → reporter dans journal.md)
+
+=== FIN DU FICHIER : templates/simulation.md ===
+
+=== FICHIER DU DÉPÔT : templates/sources.md ===
+# Sources — {{titre du cours}}
+
+Règle : uniquement des URL réellement consultées. Rien d'inventé.
+
+| # | Titre de la page | URL | Type (officielle / complément / vidéo) | Version documentée | Consultée le | Utilisée dans |
+|---|---|---|---|---|---|---|
+
+## Points [À VÉRIFIER]
+-
+
+=== FIN DU FICHIER : templates/sources.md ===
+
+=== FICHIER DU DÉPÔT : templates/sujet-bibliotheque.md ===
+# {{Sujet}}
+
+- Tags :
+- Mis de côté depuis : `cours/{{cours}}` le {{date}}
+- Raison : hors périmètre / trop avancé / manque de temps
+- Niveau visé :
+- Réutilisé dans :
+
+## Contenu
+(Notes, explications, exemples)
+
+## Sources
+| Titre | URL | Consultée le |
+|---|---|---|
+
+=== FIN DU FICHIER : templates/sujet-bibliotheque.md ===
+
+=== FICHIER DU DÉPÔT : templates/video.md ===
+# Vidéo — {{titre}}
+
+- Chaîne :
+- URL :
+- Date de publication :
+- Transcrite le :
+- Outil de transcription :
+
+## Idées à reprendre (analogies, ordre, façon d'expliquer)
+-
+
+## Faits à vérifier dans la doc officielle
+- [ ] … → source :
+
+## Transcription
+
+=== FIN DU FICHIER : templates/video.md ===
+
+=== FICHIER DU DÉPÔT : profils/formats.md ===
+# Formats horaires
+
+| Format | Durée | Points d'attention |
+|---|---|---|
+| Demi-journée | _à préciser_ | 1 objectif principal, 1 atelier |
+| Journée | _à préciser_ | Pauses, alternance théorie/pratique, atelier fil rouge |
+| Multi-jours | _à préciser_ | Récapitulatif chaque matin, fil rouge qui progresse sur les jours |
+
+> Indiquer tes horaires habituels et la durée des pauses.
+
+=== FIN DU FICHIER : profils/formats.md ===
+
+=== FICHIER DU DÉPÔT : profils/modalites.md ===
+# Modalités
+
+## Présentiel
+- Vérifier : salle, projecteur, réseau, postes ou PC apprenants, droits d'installation
+
+## Distanciel
+- Vérifier : outil de visio, partage d'écran, double écran des apprenants, environnement installable à distance
+- Prévoir : séquences plus courtes, interactions fréquentes, solution de secours (environnement en ligne, VM…)
+
+=== FIN DU FICHIER : profils/modalites.md ===
+
+=== FICHIER DU DÉPÔT : profils/niveaux.md ===
+# Niveaux d'apprenants
+
+## Débutant
+- Prérequis supposés : aucun ou très peu
+- Profondeur : le « quoi » et le « comment », un minimum de « pourquoi »
+- Ateliers : très guidés, étapes vérifiables
+
+## Technicien / praticien
+- Prérequis : pratique de base du domaine
+- Profondeur : bonnes pratiques, dépannage, cas réels
+- Ateliers : guidés au début puis semi-autonomes
+
+## Ingénieur
+- Prérequis : solides bases techniques
+- Profondeur : fonctionnement interne, compromis de conception, cas limites, performances
+- Ateliers : énoncés ouverts, choix d'architecture à justifier
+
+> Ajuster selon ta pratique.
+
+=== FIN DU FICHIER : profils/niveaux.md ===
+
+=== FICHIER DU DÉPÔT : formateurs/_modele/configuration.md ===
+# Configuration — {{nom}}
+
+Rempli par la skill `/premiere-utilisation`. Revérifier en relançant la skill.
+
+| Élément | État | Vérifié le | Remarque |
+|---|---|---|---|
+| Outils locaux (verifie_installation.sh) | | | |
+| Google Drive | connecté / non / refusé | | Dossier racine des livrables : |
+| Google Agenda | connecté / non / refusé | | Agenda à utiliser : |
+| Google Sheets | connecté / non / refusé | | |
+| Google Slides | connecté / non / refusé | | |
+| Apps Script (Google Forms) | testé / non testé | | |
+| Profil formateur | | | |
+| Charte(s) préparée(s) | | | |
+
+=== FIN DU FICHIER : formateurs/_modele/configuration.md ===
+
+=== FICHIER DU DÉPÔT : formateurs/_modele/lexique.md ===
+# Lexique — {{nom}}
+
+| Terme à utiliser | À éviter | Remarque (déclaré / observé) |
+|---|---|---|
+
+=== FIN DU FICHIER : formateurs/_modele/lexique.md ===
+
+=== FICHIER DU DÉPÔT : formateurs/_modele/profil.md ===
+# Profil formateur — {{nom}}
+
+- Identifiant : {{identifiant}}  (nom du dossier, ex. `pierre-juif`)
+- Domaines enseignés :
+- Publics habituels :
+- Configuration (connecteurs, outils) : voir `configuration.md`
+- Charte graphique par défaut : `chartes/{{nom-charte}}/`
+
+## Personnalité pédagogique
+- Posture (coach, expert, pair, conteur…) :
+- Rapport aux apprenants (proximité, exigence, humour…) :
+- Rythme préféré (beaucoup de pratique, démos en direct, théorie d'abord…) :
+- Rituels (tour de table, quiz d'ouverture, récap du matin…) :
+- Ce qui compte le plus pour toi dans une formation :
+
+## Origine des informations
+Chaque élément de ce profil est soit **déclaré** par le formateur, soit **observé** dans ses supports (avec le fichier source). Rien n'est supposé.
+
+=== FIN DU FICHIER : formateurs/_modele/profil.md ===
+
+=== FICHIER DU DÉPÔT : formateurs/_modele/voix.md ===
+# Voix — {{nom}}
+
+> Lu par les agents rédacteurs avant toute rédaction destinée aux apprenants.
+> Indiquer pour chaque point : (déclaré) ou (observé dans `exemples/<fichier>`).
+
+## Ton général
+- Tutoiement / vouvoiement des apprenants :
+- Registre (direct, humoristique, formel…) :
+- Longueur des phrases, densité du texte sur les slides :
+
+## Façon d'expliquer
+- Introduction d'une notion (problème d'abord ? démo d'abord ? définition d'abord ?) :
+- Analogies récurrentes :
+- Place des anecdotes / retours d'expérience :
+
+## Expressions caractéristiques
+-
+
+## À ne jamais écrire
+-
+
+## Extraits réels
+> 2-3 passages copiés de vrais supports du formateur, avec le fichier d'origine.
+
+=== FIN DU FICHIER : formateurs/_modele/voix.md ===
+
+=== FICHIER DU DÉPÔT : bibliotheque/sources-officielles.md ===
+# Sources officielles par technologie
+
+> À compléter avec toi. Le documentaliste cherche d'abord ici.
+
+| Technologie | Documentation officielle (URL) | Remarques (versions, langue) |
+|---|---|---|
+| _exemple_ | _à compléter_ | |
+
+=== FIN DU FICHIER : bibliotheque/sources-officielles.md ===

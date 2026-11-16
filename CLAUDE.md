@@ -1,5 +1,8 @@
 # Règles du dépôt Course Generator
 
+> Ce fichier est copié dans chaque espace de travail par `/init-espace` (un plugin ne charge pas de CLAUDE.md lui-même).
+> Dans les skills et agents, `${CLAUDE_PLUGIN_ROOT}` désigne le dossier du plugin installé. S'il apparaît tel quel (non remplacé), le dépôt est utilisé directement : remplace-le par la racine du dépôt.
+
 Ce dépôt sert à concevoir des formations. Tout agent qui travaille ici respecte les règles ci-dessous.
 
 ## 1. Sources : ne jamais inventer

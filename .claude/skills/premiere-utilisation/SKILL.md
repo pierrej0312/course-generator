@@ -6,8 +6,9 @@ description: Configuration de la première utilisation pour un nouveau formateur
 
 Objectif : un formateur prêt à produire un cours, avec un état clair de ce qui marche et des replis pour le reste. Avancer étape par étape, en expliquant chaque étape en une phrase.
 
+0. **Espace de travail** — si le projet n'a pas de `CLAUDE.md` ni de `templates/`, lancer d'abord `/init-espace`.
 1. **Identité** — demander nom et identifiant. Créer `formateurs/<identifiant>/` depuis `formateurs/_modele/` s'il n'existe pas.
-2. **Outils locaux** — lancer `bash scripts/verifie_installation.sh`. Pour chaque manque, donner la commande d'installation adaptée à son système (demander lequel) ; ne pas installer sans son accord.
+2. **Outils locaux** — lancer `bash "${CLAUDE_PLUGIN_ROOT}/scripts/verifie_installation.sh`." Pour chaque manque, donner la commande d'installation adaptée à son système (demander lequel) ; ne pas installer sans son accord.
 3. **Connecteurs** — lire `config/connecteurs.md`. Pour chaque service :
    - vérifier s'il est disponible dans la session (outils dont le nom contient `Google_Drive`, `Google_Calendar`, `Google_Sheets`, `Google_Slides`, ou équivalent) ;
    - s'il est disponible : faire un appel de lecture inoffensif (ex. lister les fichiers récents, lister les agendas) pour confirmer qu'il répond ;

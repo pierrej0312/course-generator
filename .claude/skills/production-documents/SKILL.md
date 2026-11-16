@@ -8,27 +8,27 @@ Principe : **le markdown est la source, le fichier Office est un produit.** Tout
 
 ## Prérequis
 - Charte du cours (brief) préparée : `chartes/<charte>/charte-technique.json` présent. Sinon → skill `preparation-charte`.
-- Dépendances : `scripts/requirements.txt` + LibreOffice, pdftoppm, ImageMagick.
+- Dépendances : `${CLAUDE_PLUGIN_ROOT}/scripts/requirements.txt` + LibreOffice, pdftoppm, ImageMagick.
 
 ## Formats source
-- Diapositives : `03-supports/slides.md` — format décrit en tête de `scripts/docs/genere_pptx.py` (exemple : `scripts/docs/exemple/slides.md`). Une diapo = une idée ; préciser la mise en page logique ; notes orateur obligatoires sur les diapos de contenu.
-- Documents : markdown simple — format décrit en tête de `scripts/docs/genere_docx.py` (exemple : `scripts/docs/exemple/cahier.md`).
+- Diapositives : `03-supports/slides.md` — format décrit en tête de `${CLAUDE_PLUGIN_ROOT}/scripts/docs/genere_pptx.py` (exemple : `${CLAUDE_PLUGIN_ROOT}/scripts/docs/exemple/slides.md`). Une diapo = une idée ; préciser la mise en page logique ; notes orateur obligatoires sur les diapos de contenu.
+- Documents : markdown simple — format décrit en tête de `${CLAUDE_PLUGIN_ROOT}/scripts/docs/genere_docx.py` (exemple : `${CLAUDE_PLUGIN_ROOT}/scripts/docs/exemple/cahier.md`).
 
 ## Commandes
 ```bash
 C=chartes/<charte>
 # Diapositives
-python3 scripts/docs/genere_pptx.py 03-supports/slides.md --charte $C --out 03-supports/<cours>.pptx
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/docs/genere_pptx.py" 03-supports/slides.md --charte $C --out 03-supports/<cours>.pptx
 # Documents
-python3 scripts/docs/genere_docx.py 03-supports/cheatsheet.md        --charte $C --out 03-supports/cheatsheet.docx
-python3 scripts/docs/genere_docx.py 05-formateur/cahier.md           --charte $C --out 05-formateur/cahier.docx
-python3 scripts/docs/genere_docx.py 04-ateliers/<atelier>/enonce.md  --charte $C --out 04-ateliers/<atelier>/enonce.docx
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/docs/genere_docx.py" 03-supports/cheatsheet.md        --charte $C --out 03-supports/cheatsheet.docx
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/docs/genere_docx.py" 05-formateur/cahier.md           --charte $C --out 05-formateur/cahier.docx
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/docs/genere_docx.py" 04-ateliers/<atelier>/enonce.md  --charte $C --out 04-ateliers/<atelier>/enonce.docx
 # Vérification charte (polices / couleurs hors charte)
-python3 scripts/docs/verifie_charte.py <fichier> --charte $C
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/docs/verifie_charte.py" <fichier> --charte $C
 # PDF + images pour contrôle visuel
-bash scripts/docs/apercu.sh <fichier> <dossier>/apercu
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/docs/apercu.sh" <fichier> <dossier>/apercu
 ```
-Les chemins sont relatifs au dossier du cours pour les sources, à la racine du dépôt pour `scripts/` et `chartes/`.
+Les chemins sont relatifs au dossier du cours pour les sources, à la racine du dépôt pour `${CLAUDE_PLUGIN_ROOT}/scripts/` et `chartes/`.
 
 ## Alertes
 Code retour 2 = fichier produit **avec alertes** (densité dépassée, `[À VÉRIFIER]`, notes manquantes, style absent…). Chaque alerte se corrige dans la source : découper la diapo, raccourcir, déplacer le détail en notes orateur ou dans la cheatsheet. Ne pas augmenter les limites de la charte pour faire taire une alerte sans l'accord du formateur.

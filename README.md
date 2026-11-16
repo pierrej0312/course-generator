@@ -3,6 +3,29 @@
 Base réutilisable pour concevoir des formations : du cadrage jusqu'aux supports, ateliers, évaluations et feedback.
 À cloner (ou utiliser comme template GitHub) pour chaque nouveau cours.
 
+## Installation comme plugin Claude Code
+
+Dans une session Claude Code (terminal), ouverte dans le dossier qui servira d'espace de travail :
+
+```text
+/plugin marketplace add pierrej0312/course-generator
+/plugin install course-generator@course-generator-marketplace
+```
+
+Depuis le shell : `claude plugin marketplace add pierrej0312/course-generator` puis `claude plugin install course-generator@course-generator-marketplace`.
+
+Les skills apparaissent sous la forme `/course-generator:<skill>` (ex. `/course-generator:nouveau-cours`).
+Ensuite : `/course-generator:init-espace` crée l'espace de travail, puis `/course-generator:premiere-utilisation`.
+
+Pour tester une copie locale sans installer : `claude --plugin-dir <chemin-du-dépôt>`.
+Vérifier le manifeste : `claude plugin validate <chemin-du-dépôt>`.
+
+> Ne pas installer le plugin en ouvrant ce dépôt lui-même comme projet : ses skills `.claude/` seraient chargées deux fois.
+
+## Utilisation directe du dépôt (sans plugin)
+
+Cloner le dépôt et l'ouvrir dans Claude Code : les skills et agents de `.claude/` sont chargés tels quels.
+
 ## Première utilisation (chaque nouveau formateur)
 
 1. Ouvrir le dépôt dans Claude Code.

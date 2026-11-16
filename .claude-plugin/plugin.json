@@ -1,0 +1,38 @@
+{
+  "name": "course-generator",
+  "displayName": "Course Generator",
+  "version": "0.1.0",
+  "description": "Conception de formations : cadrage, recherche sourcée, plan, ateliers fil rouge, supports pptx/pdf à la charte, cahier formateur, évaluations Google Forms, simulations d'apprenants.",
+  "author": {
+    "name": "pierrej0312",
+    "url": "https://github.com/pierrej0312"
+  },
+  "repository": "https://github.com/pierrej0312/course-generator",
+  "keywords": [
+    "formation",
+    "cours",
+    "pédagogie",
+    "pptx",
+    "google-forms"
+  ],
+  "skills": [
+    "./.claude/skills/"
+  ],
+  "agents": [
+    "./.claude/agents/apprenant-difficile.md",
+    "./.claude/agents/apprenant-expert.md",
+    "./.claude/agents/apprenant-mefoutiste.md",
+    "./.claude/agents/apprenant-simule.md",
+    "./.claude/agents/avocat-du-diable.md",
+    "./.claude/agents/cadrage.md",
+    "./.claude/agents/cahier-formateur.md",
+    "./.claude/agents/concepteur-ateliers.md",
+    "./.claude/agents/documentaliste.md",
+    "./.claude/agents/evaluations.md",
+    "./.claude/agents/planificateur.md",
+    "./.claude/agents/redacteur-supports.md",
+    "./.claude/agents/relecteur.md",
+    "./.claude/agents/trieur-notes.md",
+    "./.claude/agents/veille-video.md"
+  ]
+}

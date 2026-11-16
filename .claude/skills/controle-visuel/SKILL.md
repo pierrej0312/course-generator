@@ -4,7 +4,7 @@ description: Contrôle visuel des documents produits (pptx, docx, pdf) en les re
 ---
 # Contrôle visuel
 
-1. Rendre le fichier : `bash scripts/docs/apercu.sh <fichier> <dossier>/apercu` → PDF, une image par page, planche contact.
+1. Rendre le fichier : `bash "${CLAUDE_PLUGIN_ROOT}/scripts/docs/apercu.sh" <fichier> <dossier>/apercu` → PDF, une image par page, planche contact.
 2. Regarder **la planche** pour la cohérence d'ensemble, puis **chaque page** concernée en détail.
 3. Vérifier, page par page :
    - **Débordements** : texte qui sort de sa zone ou passe sous un autre élément, code coupé, tableau qui déborde de la page.

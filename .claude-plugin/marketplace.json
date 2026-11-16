@@ -1,0 +1,16 @@
+{
+  "name": "course-generator-marketplace",
+  "owner": {
+    "name": "pierrej0312",
+    "url": "https://github.com/pierrej0312"
+  },
+  "description": "Catalogue du plugin Course Generator",
+  "plugins": [
+    {
+      "name": "course-generator",
+      "source": "./",
+      "description": "Conception de formations : cadrage, recherche sourcée, plan, ateliers fil rouge, supports pptx/pdf à la charte, cahier formateur, évaluations Google Forms, simulations d'apprenants.",
+      "category": "formation"
+    }
+  ]
+}
